@@ -9,6 +9,7 @@ rules.push({
 });
 
 export const rendererConfig: Configuration = {
+  devtool: 'cheap-module-source-map',
   module: {
     rules,
   },
