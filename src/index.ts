@@ -1,23 +1,22 @@
 // Core Electron modules
 import { BrowserWindow, app, ipcMain } from 'electron';
 import { shell } from 'electron';
-
+// Node.js modules
+import { resolve } from 'path';
 // PTY for terminal process spawning
 import * as pty from 'node-pty';
-
 // Shell-quote safely parses shell commands into argv arrays
 import { parse } from 'shell-quote';
-
 // Types and util imports
 import type { Arg } from './types';
-import { getArgs } from './utils';
+import { getConfig } from './utils';
 
 // Magic constants injected by Electron Forge (via Webpack) — used to load the correct frontend bundle
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
-// Parsed CLI or config arguments (only fetched once)
-const args = getArgs();
+// Parsed configs
+const [args, cwd] = getConfig();
 
 // Map to track all active terminal instances by unique ID
 const instances = new Map<string, pty.IPty>();
@@ -70,7 +69,7 @@ const createWindow = (): void => {
 
 			// Spawn terminal process
 			const term = pty.spawn(cmdProgram, cmdArgs, {
-				cwd: arg.path,
+				cwd: resolve(cwd, arg.path),
 				env: {
 					...process.env,
 					RUNALL_ID: arg.id,

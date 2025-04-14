@@ -14,7 +14,7 @@ import type { Arg } from './types';
  */
 export function abort(message: string) {
 	dialog.showErrorBox('Something went wrong', message);
-	app.quit();
+	app.exit();
 }
 
 /**
@@ -48,89 +48,57 @@ const getConfigPath = (argv: yargs.Arguments, cwd: string) => {
 };
 
 /**
- * Parses and returns a list of Arg objects from CLI or config file.
+ * Parses and returns a list of Arg objects from config file.
  *
- * Supports two input modes:
- * 1. Inline CLI args: `apps/web@"npm run dev"`
- * 2. Config file: YAML or JSON
+ * Supports input modes:
+ * 1. Config file: YAML, JSON or JS.
  */
-export function getArgs() {
-	// Parse CLI args using yargs, slicing extra args if run via electron
-	const argv = yargs(process.argv.slice(process.defaultApp ? 2 : 1))
-		.argv as yargs.Arguments;
+export function getConfig() {
+	const argv = yargs(process.argv).argv as yargs.Arguments;
 
-	// Try parsing inline CLI-style args first
-	const fromProcess = argv._.map<Arg>((arg) => {
-		const parts = arg.toString().split('@');
-		let path = parts[0];
-		let cmd = parts[1];
-
-		// Validate format
-		if (!path || !cmd) {
-			abort(`Invalid argument: ${arg}`);
-		}
-
-		// Strip quotes around values if present
-		if (path.match(/^'(.+)'$/) || path.match(/^"(.+)"$/)) {
-			path = path.slice(1, -1);
-		}
-
-		if (cmd.match(/^'(.+)'$/) || cmd.match(/^"(.+)"$/)) {
-			cmd = cmd.slice(1, -1);
-		}
-
-		return { path, cmd };
-	});
-
-	// If CLI args exist, use those
-	if (fromProcess.length) return fromProcess;
-
-	// Otherwise, fall back to loading from config file
+	// Try loading config file
 	const cwd = (argv.cwd as string | undefined) ?? process.cwd();
 	const configPath = getConfigPath(argv, cwd);
 
-	if (configPath) {
-		let config: Arg[] | null = null;
-
-		try {
-			const fileContent = readFileSync(configPath, 'utf8');
-
-			// Parse based on extension
-			if (configPath.endsWith('.yaml') || configPath.endsWith('.yml')) {
-				config = yaml.parse(fileContent);
-			} else {
-				config = JSON.parse(fileContent);
-			}
-		} catch (error) {
-			const fileType =
-				configPath.endsWith('.yaml') || configPath.endsWith('.yml')
-					? 'YAML'
-					: 'JSON';
-			abort(`Invalid ${fileType} in config file`);
-		}
-
-		// Validate config structure
-		if (!Array.isArray(config)) {
-			abort('Invalid config file. Expected an array.');
-		}
-
-		for (const arg of config) {
-			if (!arg || typeof arg !== 'object') {
-				abort('Invalid config file. Expected an array of objects.');
-			}
-
-			if (!arg.path) {
-				abort(`Invalid config file. Argument ${arg} is missing a path.`);
-			}
-
-			if (!arg.cmd) {
-				abort(`Invalid config file. Argument ${arg} is missing a cmd.`);
-			}
-		}
-
-		return config;
+	if (!configPath) {
+		abort('The config file was not found.');
+	}
+	if (
+		!['.yaml', '.yml', '.json', '.js'].some((ext) => configPath.endsWith(ext))
+	) {
+		abort(`Unsupported config file extension: ${configPath}`);
 	}
 
-	// If no CLI args and no valid config file found, fail
-	abort('No arguments provided and the config file was not found.');
+	let config: Arg[] = [];
+	try {
+		// Parse based on extension
+		if (configPath.endsWith('.yaml') || configPath.endsWith('.yml')) {
+			config = yaml.parse(readFileSync(configPath, 'utf8'));
+		} else {
+			config = require(configPath);
+		}
+	} catch (error) {
+		abort('Config file could not be parsed.');
+	}
+
+	// Validate config structure
+	if (!Array.isArray(config)) {
+		abort('Invalid config file. Expected an array.');
+	}
+
+	for (const arg of config) {
+		if (!arg || typeof arg !== 'object') {
+			abort('Invalid config file. Expected an array of objects.');
+		}
+
+		if (!arg.path) {
+			abort(`Invalid config file. Argument ${arg} is missing a path.`);
+		}
+
+		if (!arg.cmd) {
+			abort(`Invalid config file. Argument ${arg} is missing a cmd.`);
+		}
+	}
+
+	return [config, cwd];
 }

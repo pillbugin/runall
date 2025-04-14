@@ -27,22 +27,19 @@ It opens a window with multiple tabs — one for each command — plus a dedicat
 
 ## Usage 🧪
 
-Python (version 3.10 or 3.11 — required by native dependencies)
+🐍 Note: Python is required for native modules used by the underlying terminal emulator. Please ensure Python 3.10 or 3.11 is available on your system.
 
-### Using `npx`
+### Install
 
-You can run Runall directly with `npx` (no installation required):
+You can install Runall globally using npm:
 
 ```bash
-npx @pillbugin/runall apps/api@"go run main.go" apps/queue@"node queue.js" apps/web@"npm run dev"
+npm install -g @pillbugin/runall
 ```
 
-Each argument should follow the format:
-```
-<path>@"<command>"
-```
+Then, after setting a config file, you can run all commands with `runall`
 
-### Build from Source 🛠️
+### Build Manually 🛠️
 
 To manually build Runall from source, clone the repository and run:
 
@@ -55,21 +52,21 @@ This will create a `out` directory containing the built executable.
 
 ---
 
-## Using a Config File 🗂️
+## Config File 🗂️
 
-You can use a config file instead of passing commands through the CLI.
+You need to use a config file to define the commands you want to run.
 
 Runall supports:
-- `runall.config.yaml`
-- `runall.config.yml`
-- `runall.config.json`
+- `run.config.yaml`
+- `run.config.yml`
+- `run.config.json`
 
 By default, it looks for one of these files in the current working directory. You can also explicitly specify the file path:
 
 ```bash
-npx runall --config ./my-config.yaml
+runall --config ./my-config.yaml
 # or
-npx runall -c ./my-config.yaml
+runall -c ./my-config.yaml
 ```
 
 #### Configuration Format 🧾

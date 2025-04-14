@@ -1,0 +1,11 @@
+- name: API Server
+  path: ./apps/api
+  cmd: go run main.go
+
+- name: Queue Worker
+  path: ./apps/queue
+  cmd: node worker.js
+
+- name: Web App
+  path: ./apps/web
+  cmd: npm run dev
