@@ -53,7 +53,7 @@ const getConfigPath = (argv: yargs.Arguments, cwd: string) => {
  * Supports input modes:
  * 1. Config file: YAML, JSON or JS.
  */
-export function getConfig() {
+export function getConfig(): [Arg[], string] {
 	const argv = yargs(process.argv).argv as yargs.Arguments;
 
 	// Try loading config file
