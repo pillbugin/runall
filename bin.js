@@ -9,14 +9,11 @@ const { default: chalk } = require('chalk');
 const plat = os.platform(); // 'win32', 'darwin', 'linux'
 const arch = os.arch(); // 'x64', 'arm64', etc.
 
-// Determine the correct binary extension based on OS
+// Determine the correct executable extension based on OS
 const ext = plat === 'win32' ? '.exe' : plat === 'darwin' ? '.app' : '';
 
-// Build the expected path to the binary
-const binaryPath = join(
-	resolve(__dirname),
-	`out/Runall-${plat}-${arch}/Runall${ext}`,
-);
+// Expected path to the executable
+const binaryPath = join(__dirname, `out/Runall-${plat}-${arch}/Runall${ext}`);
 
 if (!existsSync(binaryPath)) {
 	console.log(`📦 Building for ${plat}/${arch}...`);
@@ -39,9 +36,10 @@ if (!existsSync(binaryPath)) {
 	console.log(chalk.dim(`   Using Python at: ${pythonPath || 'not found'}`));
 
 	// Run the build script
-	const result = spawnSync('npm', ['run', 'package'], {
+	const packageResult = spawnSync('npm', ['run', 'package'], {
 		stdio: 'pipe',
 		shell: true,
+		cwd: __dirname,
 		env: {
 			...process.env,
 			NODE_ENV: 'production',
@@ -50,9 +48,9 @@ if (!existsSync(binaryPath)) {
 		},
 	});
 
-	if (result.status !== 0) {
-		console.log(result.stdout.toString());
-		console.log(result.stderr.toString());
+	if (packageResult.status !== 0) {
+		console.log(packageResult.stdout.toString());
+		console.log(packageResult.stderr.toString());
 
 		if (
 			!pythonPath ||
