@@ -1,0 +1,11 @@
+- name: Loop 1
+  path: .
+  cmd: bash -c "while true; do echo 'Looping1...'; sleep $((RANDOM % 5 + 1)); done"
+
+- name: Loop 2
+  path: .
+  cmd: bash -c "while true; do echo 'Looping2...'; sleep $((RANDOM % 5 + 1)); done"
+
+- name: Loop 3
+  path: .
+  cmd: bash -c "while true; do echo 'Looping3...'; sleep $((RANDOM % 5 + 1)); done"
