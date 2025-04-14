@@ -27,6 +27,8 @@ It opens a window with multiple tabs — one for each command — plus a dedicat
 
 ## Usage 🧪
 
+Python (version 3.10 or 3.11 — required by native dependencies)
+
 ### Using `npx`
 
 You can run Runall directly with `npx` (no installation required):
@@ -42,7 +44,7 @@ Each argument should follow the format:
 
 ### Build from Source 🛠️
 
-To build Runall from source, you'll need Node.js and npm installed. Clone the repository and run:
+To manually build Runall from source, clone the repository and run:
 
 ```bash
 npm install

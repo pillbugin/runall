@@ -2,85 +2,139 @@
 
 const { spawn, spawnSync } = require('child_process');
 const os = require('os');
-const { resolve, join } = require('path');
-const { existsSync } = require('fs');
-const { default: chalk } = require('chalk');
+const { join } = require('path');
+const { existsSync, rmSync, writeFileSync, readFileSync } = require('fs');
+const pkg = require(join(__dirname, 'package.json'));
 
-const plat = os.platform(); // 'win32', 'darwin', 'linux'
-const arch = os.arch(); // 'x64', 'arm64', etc.
-
+const args = process.argv.slice(2);
+// 'win32', 'darwin', 'linux'
+const plat = os.platform();
+// 'x64', 'arm64', etc.
+const arch = os.arch();
 // Determine the correct executable extension based on OS
 const ext = plat === 'win32' ? '.exe' : plat === 'darwin' ? '.app' : '';
-
 // Expected path to the executable
-const binaryPath = join(__dirname, `out/Runall-${plat}-${arch}/Runall${ext}`);
+const exeDirname = join(__dirname, `out/Runall-${plat}-${arch}`);
+const exeFilename = join(exeDirname, `Runall${ext}`);
+const verFilename = join(exeDirname, 'package-version');
 
-if (!existsSync(binaryPath)) {
-	console.log(`📦 Building for ${plat}/${arch}...`);
+function main() {
+	const pkgVer = existsSync(verFilename)
+		? readFileSync(verFilename, 'utf8').trim()
+		: '';
+	if (pkgVer !== pkg.version) {
+		rmSync(join(__dirname, 'node_modules'), { recursive: true, force: true });
+		rmSync(join(__dirname, '.webpack'), { recursive: true, force: true });
+		rmSync(join(__dirname, 'out'), { recursive: true, force: true });
+	}
 
-	// Try to locate a Python interpreter (prioritize 3.10 and 3.11)
-	const pythonPath = (() => {
-		const candidates = ['python3.11', 'python3.10', 'python3', 'python'];
-		for (const cmd of candidates) {
-			const res = spawnSync(plat === 'win32' ? 'where' : 'which', [cmd], {
-				stdio: 'pipe',
-				shell: true,
-			});
-			if (res.status === 0) {
-				return res.stdout.toString().split('\n')[0].trim();
+	if (!existsSync(exeFilename)) {
+		console.log(`📦 Building for ${plat}/${arch}...`);
+
+		// Try to locate a Python interpreter (prioritize 3.10 and 3.11)
+		const pythonPath = getPythonPath();
+		console.log(
+			style(`   Using Python at: ${pythonPath || 'not found'}`, ['dim']),
+		);
+
+		// Install dependencies
+		const installResult = spawnSync('npm', ['install'], {
+			stdio: 'pipe',
+			shell: true,
+			cwd: __dirname,
+			env: {
+				...process.env,
+				NODE_ENV: 'development',
+				FORCE_COLOR: '1',
+				PYTHON: pythonPath ?? process.env.PYTHON,
+			},
+		});
+
+		if (installResult.status !== 0) {
+			abort(installResult.stdout.toString(), installResult.stderr.toString());
+		}
+
+		// Run the build script
+		const packageResult = spawnSync('npm', ['run', 'package'], {
+			stdio: 'pipe',
+			shell: true,
+			cwd: __dirname,
+			env: {
+				...process.env,
+				NODE_ENV: 'production',
+				FORCE_COLOR: '1',
+				PYTHON: pythonPath ?? process.env.PYTHON,
+			},
+		});
+
+		if (packageResult.status !== 0) {
+			if (!pythonPath || !['3.10', '3.11'].includes(pythonPath)) {
+				console.log(
+					style(
+						'⚠️  Python 3.10 or 3.11 not found. Falling back to another version. Build may fail.',
+						['yellow', 'bold'],
+					),
+				);
 			}
-		}
-		return null;
-	})();
 
-	console.log(chalk.dim(`   Using Python at: ${pythonPath || 'not found'}`));
-
-	// Run the build script
-	const packageResult = spawnSync('npm', ['run', 'package'], {
-		stdio: 'pipe',
-		shell: true,
-		cwd: __dirname,
-		env: {
-			...process.env,
-			NODE_ENV: 'production',
-			FORCE_COLOR: '1',
-			PYTHON: pythonPath ?? process.env.PYTHON,
-		},
-	});
-
-	if (packageResult.status !== 0) {
-		console.log(packageResult.stdout.toString());
-		console.log(packageResult.stderr.toString());
-
-		if (
-			!pythonPath ||
-			(!pythonPath.includes('3.10') && !pythonPath.includes('3.11'))
-		) {
-			console.log(
-				chalk.yellow.bold(
-					'⚠️  Python 3.10 or 3.11 not found. Falling back to another version. Build may fail.',
-				),
-			);
+			abort(packageResult.stdout.toString(), packageResult.stderr.toString());
 		}
 
-		console.log(chalk.red.bold('🅧  Failed to build application'));
-		process.exit(1);
+		rmSync(join(__dirname, 'node_modules'), { recursive: true });
+		rmSync(join(__dirname, '.webpack'), { recursive: true });
+		writeFileSync(verFilename, pkg.version);
+	}
+
+	// Run the built binary
+	if (plat === 'darwin') {
+		// macOS apps are .app bundles; use `open -a`
+		spawn('open', ['-a', exeFilename, '--args', '--cwd="$(pwd)"', ...args], {
+			stdio: 'inherit',
+			shell: true,
+		}).unref();
+	} else {
+		// On Linux & Windows, run the binary directly
+		spawn(exeFilename, args, {
+			stdio: 'inherit',
+			shell: plat === 'win32', // Use shell on Windows for better compatibility
+		}).unref();
 	}
 }
 
-const args = process.argv.slice(2);
+function abort(...logs) {
+	for (const log of logs ?? []) {
+		console.log(log);
+	}
 
-// Run the built binary
-if (plat === 'darwin') {
-	// macOS apps are .app bundles; use `open -a`
-	spawn('open', ['-a', binaryPath, '--args', '--cwd="$(pwd)"', ...args], {
-		stdio: 'inherit',
-		shell: true,
-	}).unref();
-} else {
-	// On Linux & Windows, run the binary directly
-	spawn(binaryPath, args, {
-		stdio: 'inherit',
-		shell: plat === 'win32', // Use shell on Windows for better compatibility
-	}).unref();
+	console.log(style('🅧  Failed to build application', ['bold', 'red']));
+	process.exit(1);
 }
+
+function getPythonPath() {
+	const candidates = ['python3.11', 'python3.10', 'python3', 'python'];
+	for (const cmd of candidates) {
+		const res = spawnSync(plat === 'win32' ? 'where' : 'which', [cmd], {
+			stdio: 'pipe',
+			shell: true,
+		});
+		if (res.status === 0) {
+			return res.stdout.toString().split('\n')[0].trim();
+		}
+	}
+	return null;
+}
+
+function style(text, ...styleNames) {
+	const styles = {
+		reset: '\x1b[0m',
+		bold: '\x1b[1m',
+		dim: '\x1b[2m',
+		red: '\x1b[31m',
+		yellow: '\x1b[33m',
+	};
+
+	const codes = styleNames.map((name) => styles[name] || '').join('');
+	return `${codes}${text}${styles.reset}`;
+}
+
+main();
