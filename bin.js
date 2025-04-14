@@ -61,7 +61,7 @@ function main() {
       cwd: __dirname,
       env: {
         ...process.env,
-        NODE_ENV: 'production',
+        NODE_ENV: 'development',
         FORCE_COLOR: '1',
         PYTHON: pythonPath ?? process.env.PYTHON,
       },
