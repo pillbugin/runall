@@ -1,7 +1,7 @@
 {
 	"name": "@pillbugin/runall",
 	"productName": "Runall",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"description": "Run all your dev commands at once — with tabs and combined logs.",
 	"main": ".webpack/main",
 	"bin": {
