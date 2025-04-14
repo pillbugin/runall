@@ -3,10 +3,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { app, dialog } from 'electron';
 
-// Type imports and external libs
-import type { Arg } from './types';
 import yaml from 'yaml';
 import yargs from 'yargs';
+// Type imports and external libs
+import type { Arg } from './types';
 
 /**
  * Show an error dialog and quit the app.

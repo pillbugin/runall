@@ -1,15 +1,17 @@
 @import "tailwindcss";
 
 @plugin "daisyui" {
-	themes: all;
+    themes: all;
 }
 
 /* Makes the title bar draggable on frameless Electron windows */
 .title-bar {
-	app-region: drag; /* Electron-specific CSS to allow dragging the window */
+    app-region: drag;
+    /* Electron-specific CSS to allow dragging the window */
 }
 
 /* Utility class for active theme button styling */
 .theme-btn-active {
-	@apply bg-accent text-accent-content; /* Uses Tailwind/DaisyUI theme tokens */
+    @apply bg-accent text-accent-content;
+    /* Uses Tailwind/DaisyUI theme tokens */
 }
