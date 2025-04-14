@@ -4,6 +4,9 @@
 	"version": "1.0.1",
 	"description": "Run all your dev commands at once — with tabs and combined logs.",
 	"main": ".webpack/main",
+	"bin": {
+		"runall": "./bin.js"
+	},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/pillbugin/runall.git"

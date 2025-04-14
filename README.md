@@ -32,7 +32,7 @@ It opens a window with multiple tabs — one for each command — plus a dedicat
 You can run Runall directly with `npx` (no installation required):
 
 ```bash
-npx runall apps/api@"go run main.go" apps/queue@"node queue.js" apps/web@"npm run dev"
+npx @pillbugin/runall apps/api@"go run main.go" apps/queue@"node queue.js" apps/web@"npm run dev"
 ```
 
 Each argument should follow the format:
